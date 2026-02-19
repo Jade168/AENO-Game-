@@ -1,6 +1,6 @@
 // game.js
-// AENO V3 Civilization - 完整程式碼（基於大綱升級 + 登入修正）
-// Version: 2026-02-19
+// AENO V3 Civilization - 完整程式碼（基於大綱升級 + 登入修正 + gameLoop 防崩潰）
+ // Version: 2026-02-19
 // IMPORTANT: Do NOT delete features unless user approved.
 
 (() => {
@@ -222,6 +222,11 @@
 
   // 遊戲 loop
   function gameLoop() {
+    if (!state) {
+      requestAnimationFrame(gameLoop);
+      return;
+    }
+
     const deltaSec = nowSec() - state.lastTickAt;
     state.lastTickAt = nowSec();
     updateTime(deltaSec);
