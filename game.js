@@ -202,16 +202,72 @@
     // 檢查 session
     const sess = getSession();
     if (sess) {
-      currentUser = sess.user;
-      state = loadUsers()[currentUser].save || makeNewState(currentUser, "earth");
-      bootScreen.style.display = "none";
-    }
+      // 在 startup() 函數最後，加上這段（確保 DOM 已載入）
+// 在 startup() 最後，加上這段（確保 DOM 已載入，按鈕能點）
+window.addEventListener('load', () => {
+  const btnRegister = document.getElementById('btnRegister');
+  const btnLogin    = document.getElementById('btnLogin');
+  const btnGuest    = document.getElementById('btnGuest');
+  const loginUser   = document.getElementById('loginUser');
+  const loginPass   = document.getElementById('loginPass');
+  const loginMsg    = document.getElementById('loginMsg');
+  const bootScreen  = document.getElementById('bootScreen');
+  const planetSelect = document.getElementById('planetSelect');
+
+  if (btnRegister) {
+    btnRegister.onclick = () => {
+      const user = loginUser.value.trim();
+      const pass = loginPass.value;
+      if (!user || !pass) {
+        loginMsg.textContent = "請輸入用戶名和密碼";
+        return;
+      }
+      register();  // 呼叫你原本已有的 register() 函數
+    };
   }
 
-  startup();
-  gameLoop();
+  if (btnLogin) {
+    btnLogin.onclick = () => {
+      const user = loginUser.value.trim();
+      const pass = loginPass.value;
+      if (!user || !pass) {
+        loginMsg.textContent = "請輸入用戶名和密碼";
+        return;
+      }
+      // 簡單登入檢查（用你原本的 loadUsers()）
+      const users = loadUsers();
+      if (users[user] && users[user].pass === pass) {
+        setSession({user});
+        currentUser = user;
+        state = loadUsers()[currentUser].save || makeNewState(currentUser, "earth");
+        bootScreen.style.display = 'none';
+        if (planetSelect) planetSelect.style.display = 'flex';
+        updateUI();
+      } else {
+        loginMsg.textContent = "用戶名或密碼錯誤";
+      }
+    };
+  }
 
-  // 事件綁定 (e.g., btnPronTest.onclick = () => pronTest("wood");)
-  // ... (所有按鈕事件保留 + 加新)
+  if (btnGuest) {
+    btnGuest.onclick = () => {
+      const guestUser = "guest_" + Date.now();
+      setSession({user: guestUser});
+      currentUser = guestUser;
+      state = makeNewState(guestUser, "earth");
+      bootScreen.style.display = 'none';
+      if (planetSelect) planetSelect.style.display = 'flex';
+      updateUI();
+    };
+  }
 
-})();
+  // 強制檢查 session，如果沒有就顯示登入畫面
+  const sess = getSession();
+  if (sess) {
+    bootScreen.style.display = 'none';
+    if (planetSelect) planetSelect.style.display = 'flex';
+  } else {
+    bootScreen.style.display = 'flex';
+  }
+});
+  
