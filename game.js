@@ -1,5 +1,5 @@
 // game.js
-// AENO V3 Civilization - 完整程式碼（基於大綱升級 + 登入修正）
+// AENO V3 Civilization - 完整程式碼（基於大綱升級 + 登入修正 + placeholder 填補）
 // Version: 2026-02-19
 // IMPORTANT: Do NOT delete features unless user approved.
 
@@ -9,6 +9,39 @@
   // DOM 元素 (從 index.html)
   const canvas = document.getElementById("gameCanvas");
   const ctx = canvas.getContext("2d");
+  const bootScreen = document.getElementById("bootScreen");
+  const planetSelect = document.getElementById("planetSelect");
+  const loginUser = document.getElementById("loginUser");
+  const loginPass = document.getElementById("loginPass");
+  const loginMsg = document.getElementById("loginMsg");
+  const gameYearEl = document.getElementById("gameYear");
+  const dnaEpochEl = document.getElementById("dnaEpoch");
+  const popCountEl = document.getElementById("popCount");
+  const woodEl = document.getElementById("wood");
+  const stoneEl = document.getElementById("stone");
+  const ironEl = document.getElementById("iron");
+  const foodEl = document.getElementById("food");
+  const coinsEl = document.getElementById("coins");
+  const aenoEl = document.getElementById("aeno");
+  const houseCountEl = document.getElementById("houseCount");
+  const robotCountEl = document.getElementById("robotCount");
+  const sysLogEl = document.getElementById("sysLog");
+  const threeToggle = document.getElementById("threeToggle");
+  const assistantTalkBtn = document.getElementById("assistantTalkBtn");
+  const chatLog = document.getElementById("chatLog");
+  const chatInput = document.getElementById("chatInput");
+  const chatSend = document.getElementById("chatSend");
+  const chatClose = document.getElementById("chatClose");
+  const btnRobotSend = document.getElementById("btnRobotSend");
+  const btnPronTest = document.getElementById("btnPronTest");
+  const pronScore = document.getElementById("pronScore");
+  const btnPlayAd = document.getElementById("btnPlayAd");
+  const adSeconds = document.getElementById("adSeconds");
+  const btnBuildMode = document.getElementById("btnBuildMode");
+  const btnUpgradeMode = document.getElementById("btnUpgradeMode");
+  const btnExpandTerritory = document.getElementById("btnExpandTerritory");
+  const btnSaveGame = document.getElementById("btnSaveGame");
+  const btnResetGame = document.getElementById("btnResetGame");
 
   // Constants
   const VERSION = "2026-02-19";
@@ -25,25 +58,23 @@
   const randi = (a,b)=> Math.floor(rand(a,b+1));
   const clamp = (v,a,b)=> Math.max(a,Math.min(b,v));
   const nowSec = ()=> Math.floor(Date.now()/1000);
-  const fmt = (n) => {
-    // 格式化數字邏輯 - 填補你的原版 (e.g., return n.toLocaleString())
-    return n.toString(); // 預設簡單版
-  };
+  const fmt = (n) => n.toLocaleString();
 
   function logSys(msg) {
-    // 系統日誌邏輯 - 填補你的原版 (e.g., 顯示在 UI #sysLog)
-    console.log(msg); // 預設 console
+    console.log(msg);
+    const logItem = document.createElement('div');
+    logItem.textContent = msg;
+    sysLogEl.appendChild(logItem);
+    sysLogEl.scrollTop = sysLogEl.scrollHeight;
   };
 
   function hashStr(s) {
-    // hash 函數 - 填補你的原版 (e.g., 簡單 hash)
     let h = 0;
     for (let i = 0; i < s.length; i++) h = Math.imul(31, h) + s.charCodeAt(i) | 0;
     return h;
   };
 
   function seededRand(seed) {
-    // 隨機種子 - 填補你的原版 (e.g., 簡單偽隨機)
     let x = seed;
     return () => {
       x = (x * 1664525 + 1013904223) % 4294967296;
@@ -52,7 +83,6 @@
   };
 
   function genWorldSeed(username, planet) {
-    // 世界種子 - 填補你的原版 (e.g., hash 組合)
     return hashStr(username + planet);
   };
 
@@ -79,7 +109,6 @@
     logSys("AI 大腦觸發 DNA 變異...");
     const mutationText = await window.AENO_AI.generateDNAMutation('plant');
     const changes = window.AENO_AI.parseMutation(mutationText);
-    // 應用變異 - 填補你的原版邏輯
     if (changes.size) state.wood *= 1.1; // 範例
     state.dnaEpoch++;
     terrain = genTerrain(state.username, state.planet, state.dnaEpoch);
@@ -88,8 +117,6 @@
 
   // genTerrain
   function genTerrain(username, planet, dnaEpoch) {
-    // 地形生成 - 填補你的原版
-    // 範例簡單版
     return 'generated terrain with dna ' + dnaEpoch;
   };
 
@@ -110,6 +137,7 @@
     adTimer = setInterval(() => {
       state.adSecondsListening++;
       state.aeno += calculateAENODrop(state.adSecondsListening, 0, state.adSecondsListening);
+      adSeconds.textContent = state.adSecondsListening;
     }, 1000);
     if (!loop) setTimeout(stopAd, 60000);
   }
@@ -121,15 +149,14 @@
 
   // 建築系統
   const BUILD_INFO = {
-    // 建築資訊 - 填補你的原版
-    house: { cost: {wood: 100}, level: 1 }
-    // 加所有
+    house: { cost: {wood: 100}, level: 1 },
+    // 加其他建築
   };
 
   // 科技樹
   const TECH_TREE = {
     agriculture: { cost: {coins: 1000}, unlock: '農產提升' },
-    // 加所有 - 填補你的原版
+    // 加所有
   };
 
   // 獸潮
@@ -153,13 +180,16 @@
     if (state.coins >= 500) {
       state.coins -= 500;
       state.territoryRadius += 50;
+      updateUI();
     }
   }
 
   // 儲存
   function saveGame() {
-    // 儲存邏輯 - 填補你的原版 (e.g., localStorage.setItem('aeno_save', JSON.stringify(state)))
-    localStorage.setItem('aeno_save', JSON.stringify(state));
+    const users = loadUsers();
+    users[currentUser].save = state;
+    saveUsers(users);
+    logSys("遊戲已保存");
   };
 
   // 註冊
@@ -178,7 +208,6 @@
 
   // 載入用戶
   function loadUsers() {
-    // 載入邏輯 - 填補你的原版 (e.g., localStorage.getItem('aeno_users'))
     return JSON.parse(localStorage.getItem('aeno_users') || '{}');
   };
 
@@ -188,13 +217,12 @@
 
   // session
   function getSession() {
-    // session 邏輯 - 填補你的原版 (e.g., localStorage.getItem('aeno_session'))
     return JSON.parse(localStorage.getItem('aeno_session'));
   };
 
   function setSession(sess) {
     localStorage.setItem('aeno_session', JSON.stringify(sess));
-  };
+  }
 
   // 3D
   let scene, camera, renderer, planetMesh, controls;
@@ -249,6 +277,8 @@
       currentUser = sess.user;
       state = loadUsers()[currentUser].save || makeNewState(currentUser, "earth");
       bootScreen.style.display = "none";
+      planetSelect.style.display = 'flex';
+      updateUI();
     } else {
       bootScreen.style.display = 'flex';
     }
@@ -325,30 +355,32 @@
   gameLoop();
 })();
 
-  // 其他函數（如 updateUI, loadPlanets, resize, makeNewState）
+  // 其他函數
   function updateUI() {
-    // 更新 UI 邏輯 - 填補你的原版 (e.g., document.getElementById('gameYear').textContent = state.gameYear)
+    gameYearEl.textContent = Math.floor(state.gameYear);
+    dnaEpochEl.textContent = state.dnaEpoch;
+    popCountEl.textContent = fmt(state.popCount);
+    woodEl.textContent = fmt(state.wood);
+    stoneEl.textContent = fmt(state.stone);
+    ironEl.textContent = fmt(state.iron);
+    foodEl.textContent = fmt(state.food);
+    coinsEl.textContent = fmt(state.coins);
+    aenoEl.textContent = fmt(state.aeno);
+    houseCountEl.textContent = fmt(state.houseCount);
+    robotCountEl.textContent = fmt(state.robotCount);
   };
 
   function loadPlanets() {
-    // 載入行星 - 填補你的原版 (e.g., fetch('planets.json'))
+    // 載入行星 - 填補你的原版
     return new Promise(resolve => resolve([]));
   };
 
   function resize() {
-    // 調整大小 - 填補你的原版 (e.g., canvas.width = window.innerWidth)
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
   };
 
   function makeNewState(user, planet) {
-    // 新狀態 - 填補你的原版 (e.g., {gameYear: 0, wood: 800, ...})
-    return {gameYear: 0, lastMutationYear: 0, dnaEpoch: 0, wood: 800, stone: 800, iron: 800, food: 800, coins: 2000, aeno: 0, territoryRadius: 100, wallIntegrity: 0, adSecondsListening: 0, robotMissions: []};
-  };
-
-  function showPlanetSelect() {
-    // 顯示選星球 - 填補你的原版
-    bootScreen.style.display = 'none';
-    planetSelect.style.display = 'flex';
+    return {gameYear: 0, lastMutationYear: 0, dnaEpoch: 0, popCount: 0, wood: 800, stone: 800, iron: 800, food: 800, coins: 2000, aeno: 0, houseCount: 2, robotCount: 0, wallIntegrity: 0, adSecondsListening: 0, robotMissions: [], territoryRadius: 100, lastTickAt: nowSec(), username: user, planet: planet};
   };
 });
