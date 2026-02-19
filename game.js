@@ -1,5 +1,5 @@
 // game.js
-// AENO V3 Civilization - 完整程式碼（基於大綱升級 + 登入修正 + placeholder 填補）
+// AENO V3 Civilization - 完整程式碼（基於大綱升級 + 登入修正）
 // Version: 2026-02-19
 // IMPORTANT: Do NOT delete features unless user approved.
 
@@ -9,39 +9,6 @@
   // DOM 元素 (從 index.html)
   const canvas = document.getElementById("gameCanvas");
   const ctx = canvas.getContext("2d");
-  const bootScreen = document.getElementById("bootScreen");
-  const planetSelect = document.getElementById("planetSelect");
-  const loginUser = document.getElementById("loginUser");
-  const loginPass = document.getElementById("loginPass");
-  const loginMsg = document.getElementById("loginMsg");
-  const gameYearEl = document.getElementById("gameYear");
-  const dnaEpochEl = document.getElementById("dnaEpoch");
-  const popCountEl = document.getElementById("popCount");
-  const woodEl = document.getElementById("wood");
-  const stoneEl = document.getElementById("stone");
-  const ironEl = document.getElementById("iron");
-  const foodEl = document.getElementById("food");
-  const coinsEl = document.getElementById("coins");
-  const aenoEl = document.getElementById("aeno");
-  const houseCountEl = document.getElementById("houseCount");
-  const robotCountEl = document.getElementById("robotCount");
-  const sysLogEl = document.getElementById("sysLog");
-  const threeToggle = document.getElementById("threeToggle");
-  const assistantTalkBtn = document.getElementById("assistantTalkBtn");
-  const chatLog = document.getElementById("chatLog");
-  const chatInput = document.getElementById("chatInput");
-  const chatSend = document.getElementById("chatSend");
-  const chatClose = document.getElementById("chatClose");
-  const btnRobotSend = document.getElementById("btnRobotSend");
-  const btnPronTest = document.getElementById("btnPronTest");
-  const pronScore = document.getElementById("pronScore");
-  const btnPlayAd = document.getElementById("btnPlayAd");
-  const adSeconds = document.getElementById("adSeconds");
-  const btnBuildMode = document.getElementById("btnBuildMode");
-  const btnUpgradeMode = document.getElementById("btnUpgradeMode");
-  const btnExpandTerritory = document.getElementById("btnExpandTerritory");
-  const btnSaveGame = document.getElementById("btnSaveGame");
-  const btnResetGame = document.getElementById("btnResetGame");
 
   // Constants
   const VERSION = "2026-02-19";
@@ -52,6 +19,10 @@
   const AENO_TOTAL_SUPPLY = 20000000; // AENO 上限
   const HALVING_INTERVAL = 4 * 10 * 365 * 24 * 3600; // 每 4 年 halving (遊戲時間秒)
   const PRON_THRESHOLD = 40; // 發音門檻
+
+  let currentUser = null;
+  let state = null;
+  let terrain = null;
 
   // Utils
   const rand = (a,b)=> a + Math.random()*(b-a);
@@ -137,7 +108,6 @@
     adTimer = setInterval(() => {
       state.adSecondsListening++;
       state.aeno += calculateAENODrop(state.adSecondsListening, 0, state.adSecondsListening);
-      adSeconds.textContent = state.adSecondsListening;
     }, 1000);
     if (!loop) setTimeout(stopAd, 60000);
   }
@@ -283,77 +253,63 @@
       bootScreen.style.display = 'flex';
     }
 
-    // 登入事件綁定
-    window.addEventListener('load', () => {
-      const btnRegister = document.getElementById('btnRegister');
-      const btnLogin = document.getElementById('btnLogin');
-      const btnGuest = document.getElementById('btnGuest');
-      const loginUser = document.getElementById('loginUser');
-      const loginPass = document.getElementById('loginPass');
-      const loginMsg = document.getElementById('loginMsg');
-      const bootScreen = document.getElementById('bootScreen');
-      const planetSelect = document.getElementById('planetSelect');
+    bindLoginHandlers();
+  }
 
-      if (btnRegister) {
-        btnRegister.onclick = () => {
-          const user = loginUser.value.trim();
-          const pass = loginPass.value;
-          if (!user || !pass) {
-            loginMsg.textContent = "請輸入用戶名和密碼";
-            return;
-          }
-          register();
-        };
-      }
+  function bindLoginHandlers() {
+    const btnRegister = document.getElementById('btnRegister');
+    const btnLogin = document.getElementById('btnLogin');
+    const btnGuest = document.getElementById('btnGuest');
 
-      if (btnLogin) {
-        btnLogin.onclick = () => {
-          const user = loginUser.value.trim();
-          const pass = loginPass.value;
-          if (!user || !pass) {
-            loginMsg.textContent = "請輸入用戶名和密碼";
-            return;
-          }
-          const users = loadUsers();
-          if (users[user] && users[user].pass === pass) {
-            setSession({user});
-            currentUser = user;
-            state = loadUsers()[currentUser].save || makeNewState(currentUser, "earth");
-            bootScreen.style.display = 'none';
-            planetSelect.style.display = 'flex';
-            updateUI();
-          } else {
-            loginMsg.textContent = "用戶名或密碼錯誤";
-          }
-        };
-      }
+    if (btnRegister) {
+      btnRegister.onclick = () => {
+        const user = loginUser.value.trim();
+        const pass = loginPass.value;
+        if (!user || !pass) {
+          loginMsg.textContent = "請輸入用戶名和密碼";
+          return;
+        }
+        register();
+      };
+    }
 
-      if (btnGuest) {
-        btnGuest.onclick = () => {
-          const guestUser = "guest_" + Date.now();
-          setSession({user: guestUser});
-          currentUser = guestUser;
-          state = makeNewState(guestUser, "earth");
+    if (btnLogin) {
+      btnLogin.onclick = () => {
+        const user = loginUser.value.trim();
+        const pass = loginPass.value;
+        if (!user || !pass) {
+          loginMsg.textContent = "請輸入用戶名和密碼";
+          return;
+        }
+        const users = loadUsers();
+        if (users[user] && users[user].pass === pass) {
+          setSession({user});
+          currentUser = user;
+          state = users[currentUser].save || makeNewState(currentUser, "earth");
           bootScreen.style.display = 'none';
           planetSelect.style.display = 'flex';
           updateUI();
-        };
-      }
+        } else {
+          loginMsg.textContent = "用戶名或密碼錯誤";
+        }
+      };
+    }
 
-      // 強制檢查 session
-      const sess = getSession();
-      if (sess) {
+    if (btnGuest) {
+      btnGuest.onclick = () => {
+        const guestUser = "guest_" + Date.now();
+        setSession({user: guestUser});
+        currentUser = guestUser;
+        state = makeNewState(guestUser, "earth");
         bootScreen.style.display = 'none';
         planetSelect.style.display = 'flex';
-      } else {
-        bootScreen.style.display = 'flex';
-      }
-    });
+        updateUI();
+      };
+    }
   }
 
   startup();
   gameLoop();
-})();
 
   // 其他函數
   function updateUI() {
@@ -371,7 +327,6 @@
   };
 
   function loadPlanets() {
-    // 載入行星 - 填補你的原版
     return new Promise(resolve => resolve([]));
   };
 
@@ -383,4 +338,4 @@
   function makeNewState(user, planet) {
     return {gameYear: 0, lastMutationYear: 0, dnaEpoch: 0, popCount: 0, wood: 800, stone: 800, iron: 800, food: 800, coins: 2000, aeno: 0, houseCount: 2, robotCount: 0, wallIntegrity: 0, adSecondsListening: 0, robotMissions: [], territoryRadius: 100, lastTickAt: nowSec(), username: user, planet: planet};
   };
-});
+})();
