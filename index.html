@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>AENO Civilization</title>
+  <link rel="stylesheet" href="./style.css?v=2026-02-19" />
+  <!-- Transformers.js for AI Brain -->
+  <script src="https://cdn.jsdelivr.net/npm/@xenova/transformers@3.0.0/dist/transformers.min.js"></script>
+  <!-- Three.js + Controls -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.161.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+
+  <!-- GAME CANVAS (for 2D overlay, 3D uses renderer) -->
+  <canvas id="gameCanvas"></canvas>
+
+  <!-- Boot Screen -->
+  <div id="bootScreen">
+    <div class="bootBox">
+      <img src="./logo.png" alt="AENO Logo" />
+      <h3>AENO Civilization</h3>
+
+      <input id="loginUser" placeholder="用戶名 Username" />
+      <input id="loginPass" placeholder="密碼 Password" type="password" />
+
+      <button id="btnRegister">註冊 Register</button>
+      <button id="btnLogin">登入 Login</button>
+
+      <div style="margin-top:10px;">
+        <button id="btnGuest">訪客模式 Guest</button>
+      </div>
+
+      <div id="loginMsg"></div>
+      <div style="opacity:0.7;font-size:12px;margin-top:10px;">
+        Version 2026-02-19
+      </div>
+    </div>
+  </div>
+
+  <!-- Planet Select -->
+  <div id="planetSelect" class="hidden">
+    <div class="bootBox">
+      <h3>選擇出生星球</h3>
+      <p style="opacity:0.8;font-size:13px;">
+        選定後永久定居，未解放黑洞前不能移民。
+      </p>
+
+      <select id="planetPicker" style="width:92%;padding:10px;border-radius:10px;border:none;">
+      </select>
+
+      <button id="btnConfirmPlanet">確定 Confirm</button>
+    </div>
+  </div>
+
+  <!-- Assistant UI (小動物助手, 可穿衣服/旗幟廣告位) -->
+  <div id="assistant">
+    <div id="assistantEmoji">🐺</div>
+    <div style="flex:1;">
+      <div id="assistantName">AENO</div>
+      <div style="font-size:12px;opacity:0.8;">伴生AI · 粵語模式</div>
+    </div>
+    <button id="assistantTalkBtn">對話</button>
+    <div id="assistantAdFlag" style="position:absolute;top:-20px;right:10px;font-size:12px;">[廣告旗幟位]</div>
+  </div>
+
+  <!-- Chat Box (對話框, 支持指令 + 廣告歌播放) -->
+  <div id="chatBox" class="hidden">
+    <div id="chatHeader">
+      <b>AENO AI 對話</b>
+      <span id="chatClose">×</span>
+    </div>
+    <div id="chatLog"></div>
+    <div id="chatInputRow">
+      <input id="chatInput" placeholder="輸入指令：巡邏 / 收集 / 建造 / 學習語言..." />
+      <button id="chatSend">送出</button>
+    </div>
+  </div>
+
+  <!-- Main Panel (可拖動/收起/縮小, 最多佔1/4畫面) -->
+  <div id="mainPanel">
+    <div id="panelHeader">
+      <b>AENO 面板</b>
+      <div class="panelBtns">
+        <button id="panelMinBtn">—</button>
+        <button id="panelHideBtn">×</button>
+      </div>
+    </div>
+
+    <div id="tabs">
+      <button class="tabBtn active" data-tab="tabStats">狀態</button>
+      <button class="tabBtn" data-tab="tabBuild">建築</button>
+      <button class="tabBtn" data-tab="tabRobots">機器人</button>
+      <button class="tabBtn" data-tab="tabMarket">交易所</button>
+      <button class="tabBtn" data-tab="tabTech">科技</button>
+      <button class="tabBtn" data-tab="tabAd">廣告歌</button>
+      <button class="tabBtn" data-tab="tabSystem">系統</button>
+    </div>
+
+    <!-- Stats (資源/人口/AENO) -->
+    <div id="tabStats" class="tabPage active">
+      <div class="statRow"><span>星球</span><b id="planetName">?</b></div>
+      <div class="statRow"><span>年份</span><b id="gameYear">0</b></div>
+      <div class="statRow"><span>DNA 紀元</span><b id="dnaEpoch">0</b></div>
+      <div class="statRow"><span>人口</span><b id="popCount">0</b></div>
+
+      <hr style="opacity:0.2;" />
+
+      <div class="statRow"><span>木材</span><b id="wood">0</b></div>
+      <div class="statRow"><span>石頭</span><b id="stone">0</b></div>
+      <div class="statRow"><span>鐵礦</span><b id="iron">0</b></div>
+      <div class="statRow"><span>糧食</span><b id="food">0</b></div>
+
+      <hr style="opacity:0.2;" />
+
+      <div class="statRow"><span>金幣</span><b id="coins">0</b></div>
+      <div class="statRow"><span>AENO</span><b id="aeno">0</b></div>
+
+      <hr style="opacity:0.2;" />
+
+      <div class="statRow"><span>房屋</span><b id="houseCount">0</b></div>
+      <div class="statRow"><span>機器人</span><b id="robotCount">0</b></div>
+    </div>
+
+    <!-- Build (建築/升級/領土擴張) -->
+    <div id="tabBuild" class="tabPage">
+      <div class="buildGrid">
+        <button class="buildBtn" data-build="house">房屋</button>
+        <button class="buildBtn" data-build="farm">農田</button>
+        <button class="buildBtn" data-build="lumber">伐木場</button>
+        <button class="buildBtn" data-build="quarry">採石場</button>
+        <button class="buildBtn" data-build="mine">礦場</button>
+        <button class="buildBtn" data-build="factory">工廠</button>
+        <button class="buildBtn" data-build="market">市集</button>
+        <button class="buildBtn" data-build="wall">城牆</button>
+        <button class="buildBtn" data-build="warehouse">倉庫</button>
+        <button class="buildBtn" data-build="lab">研究所</button>
+        <button class="buildBtn" data-build="exchange">交易所</button>
+        <button class="buildBtn" data-build="adStation">廣告站</button>
+      </div>
+
+      <button class="actionBtn" id="btnBuildMode">建築模式</button>
+      <button class="smallBtn" id="btnCancelBuildMode">取消</button>
+
+      <button class="actionBtn" id="btnUpgradeMode">升級模式</button>
+      <button class="smallBtn" id="btnCancelUpgradeMode">取消</button>
+
+      <button class="actionBtn" id="btnExpandTerritory">擴張領土 (金幣)</button>
+    </div>
+
+    <!-- Robots (機器人派遣/探索20星球, 身上廣告位) -->
+    <div id="tabRobots" class="tabPage">
+      <button class="actionBtn" id="btnRobotSend">派出機器人探索</button>
+      <button class="smallBtn" id="btnRobotRecall">召回全部</button>
+
+      <hr style="opacity:0.2;" />
+
+      <div class="statRow"><span>機器人廣告位</span><b>[貼紙位]</b></div>
+
+      <hr style="opacity:0.2;" />
+
+      <button class="actionBtn" id="btnPronTest">發音學習測試</button>
+      <div id="pronScore" style="margin-top:8px;font-size:13px;">評分: 0% (門檻40%)</div>
+    </div>
+
+    <!-- Market (交易所 + 股市) -->
+    <div id="tabMarket" class="tabPage">
+      <select id="marketItem" style="width:100%;padding:10px;border-radius:10px;border:none;">
+        <option value="wood">木材</option>
+        <option value="stone">石頭</option>
+        <option value="iron">鐵礦</option>
+        <option value="food">糧食</option>
+        <option value="fragments">碎片</option>
+      </select>
+
+      <input id="marketAmount" type="number" value="10" style="width:94%;padding:10px;margin-top:8px;border-radius:10px;border:none;" />
+
+      <button class="actionBtn" id="btnBuy">買入</button>
+      <button class="smallBtn" id="btnSell">賣出</button>
+
+      <hr style="opacity:0.2;" />
+
+      <div id="stockChart" style="height:150px;background:rgba(255,255,255,0.1);border-radius:10px;">[股市圖表]</div>
+    </div>
+
+    <!-- Tech (科技樹) -->
+    <div id="tabTech" class="tabPage">
+      <div class="techGrid">
+        <button class="techBtn" data-tech="agriculture">農業科技</button>
+        <button class="techBtn" data-tech="industry">工業科技</button>
+        <button class="techBtn" data-tech="military">軍事科技</button>
+        <button class="techBtn" data-tech="ai">AI 強化</button>
+        <button class="techBtn" data-tech="robot">機器人科技</button>
+        <button class="techBtn" data-tech="ftl">FTL 移民</button>
+        <button class="techBtn" data-tech="blackhole">黑洞科技</button>
+      </div>
+    </div>
+
+    <!-- Ad Song (廣告歌播放) -->
+    <div id="tabAd" class="tabPage">
+      <button class="actionBtn" id="btnPlayAd">播放廣告歌</button>
+      <button class="smallBtn" id="btnLoopAd">Loop: ON</button>
+
+      <div style="margin-top:10px;font-size:13px;">聽歌時間: <b id="adSeconds">0</b> 秒 (提升 AENO 掉落率)</div>
+    </div>
+
+    <!-- System (系統日誌/自動/儲存) -->
+    <div id="tabSystem" class="tabPage">
+      <button class="actionBtn" id="btnAutoToggle">自動模式: ON</button>
+      <button class="smallBtn" id="btnAutoStopNow">停止自動</button>
+
+      <button class="actionBtn" id="btnSaveGame">手動保存</button>
+      <button class="smallBtn" id="btnResetGame">重置遊戲</button>
+
+      <div id="sysLog" style="max-height:200px;overflow-y:auto;margin-top:10px;"></div>
+    </div>
+  </div>
+
+  <!-- Restore Panel Button -->
+  <button id="panelRestoreBtn" class="hidden">打開面板</button>
+
+  <!-- 3D Toggle -->
+  <div id="threeToggle">3D 模式: ON</div>
+
+  <!-- Scripts -->
+  <script src="./assistantData.js?v=2026-02-19"></script>
+  <script src="./characters.js?v=2026-02-19"></script>
+  <script src="./ai-assistant.js?v=2026-02-19"></script>
+  <script src="./game.js?v=2026-02-19"></script>
+</body>
+</html>
