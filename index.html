@@ -1,27 +1,79 @@
 <!DOCTYPE html>
 <html lang="zh-HK">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AENO</title>
-<link rel="stylesheet" href="style.css" />
+
+<style>
+body{
+  margin:0;
+  overflow:hidden;
+  font-family:Arial;
+}
+
+.screen{
+  position:absolute;
+  width:100%;
+  height:100%;
+}
+
+.hidden{
+  display:none;
+}
+
+#loginScreen{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  flex-direction:column;
+  background:#111;
+  color:white;
+}
+
+#loginScreen input{
+  margin:5px;
+  padding:8px;
+}
+
+#loginScreen button{
+  margin:5px;
+  padding:8px 16px;
+}
+
+#gameCanvas{
+  position:absolute;
+  top:0;
+  left:0;
+}
+
+.panel{
+  position:absolute;
+  top:50px;
+  left:50px;
+  width:260px;
+  background:rgba(0,0,0,0.8);
+  color:white;
+  padding:10px;
+  border-radius:8px;
+  z-index:10;
+}
+</style>
 </head>
 
 <body>
 
 <!-- 登入畫面 -->
 <div id="loginScreen" class="screen">
-  <h1>AENO V3</h1>
+  <h2>AENO</h2>
 
-  <input id="username" placeholder="帳號"/>
-  <input id="password" type="password" placeholder="密碼"/>
+  <input id="username" placeholder="帳號">
+  <input id="password" type="password" placeholder="密碼">
 
-  <div class="btnRow">
-    <button id="btnRegister">註冊</button>
-    <button id="btnLogin">登入</button>
-  </div>
+  <button id="btnRegister">註冊</button>
+  <button id="btnLogin">登入</button>
 
-  <hr/>
+  <hr>
 
   <button id="btnGuest">遊客模式</button>
 </div>
@@ -31,18 +83,21 @@
   <canvas id="gameCanvas"></canvas>
 
   <div id="mainPanel" class="panel">
-    <div id="panelHeader">AENO 面板</div>
-    <div id="panelContent">
-      金幣: <span id="uiGold">0</span><br/>
-      木材: <span id="uiWood">0</span><br/>
-      石頭: <span id="uiStone">0</span><br/>
-      鐵: <span id="uiIron">0</span><br/>
-      糧食: <span id="uiFood">0</span><br/>
-      AENO: <span id="uiAeno">0</span><br/>
-    </div>
+    <div><b>AENO 面板</b></div>
+    金幣: <span id="uiGold">0</span><br>
+    木材: <span id="uiWood">0</span><br>
+    石頭: <span id="uiStone">0</span><br>
+    鐵: <span id="uiIron">0</span><br>
+    糧食: <span id="uiFood">0</span><br>
+    AENO: <span id="uiAeno">0</span><br>
   </div>
 </div>
 
+<!-- 一定要先載入 three.js -->
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+
+<!-- 再載入遊戲程式 -->
 <script src="game.js"></script>
+
 </body>
 </html>
