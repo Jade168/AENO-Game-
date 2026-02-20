@@ -3,197 +3,78 @@
 <head>
 <meta charset="UTF-8">
 <title>AENO V3</title>
-
 <style>
-body { margin:0; overflow:hidden; font-family:sans-serif; background:#000; }
-
-#loginScreen {
-position:absolute;
-width:100%;
-height:100%;
-display:flex;
-justify-content:center;
-align-items:center;
-background:#111;
-color:white;
-flex-direction:column;
-z-index:50;
-}
-
-#gameUI {
-position:absolute;
-top:10px;
-left:10px;
-width:260px;
-background:rgba(0,0,0,0.75);
-color:white;
-padding:12px;
-border-radius:8px;
-cursor:move;
-z-index:10;
-}
-
-#toggleBtn {
-position:absolute;
-top:10px;
-right:10px;
-z-index:20;
-padding:6px 10px;
-}
-
-#gameContainer {
-width:100vw;
-height:100vh;
-}
+body{margin:0;overflow:hidden;background:#000;}
+#gameContainer{width:100vw;height:100vh;}
 </style>
 </head>
-
 <body>
-
-<div id="loginScreen">
-<h2>AENO V3</h2>
-<input id="playerName" placeholder="Enter Name">
-<button onclick="login()">Enter</button>
-</div>
-
-<button id="toggleBtn" onclick="toggleUI()" style="display:none;">UI</button>
-
-<div id="gameUI" style="display:none;">
-<h3>基地面板</h3>
-<div>木材: <span id="wood">800</span></div>
-<div>石頭: <span id="stone">800</span></div>
-<div>鐵礦: <span id="iron">800</span></div>
-<div>糧食: <span id="food">800</span></div>
-<div>金幣: <span id="gold">2000</span></div>
-</div>
 
 <div id="gameContainer"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.158.0/examples/js/loaders/GLTFLoader.js"></script>
 
 <script>
 
-// ===== LOGIN =====
-
-function login(){
-const name = document.getElementById("playerName").value;
-if(!name) return;
-
-localStorage.setItem("aenoPlayer", name);
-
-document.getElementById("loginScreen").style.display = "none";
-document.getElementById("gameUI").style.display = "block";
-document.getElementById("toggleBtn").style.display = "block";
-
-startGame();
-}
-
-window.onload = function(){
-if(localStorage.getItem("aenoPlayer")){
-document.getElementById("loginScreen").style.display = "none";
-document.getElementById("gameUI").style.display = "block";
-document.getElementById("toggleBtn").style.display = "block";
-startGame();
-}
-}
-
-// ===== UI DRAG =====
-
-const panel = document.getElementById("gameUI");
-let offsetX, offsetY, isDown = false;
-
-panel.addEventListener("mousedown", (e)=>{
-isDown = true;
-offsetX = e.clientX - panel.offsetLeft;
-offsetY = e.clientY - panel.offsetTop;
-});
-
-document.addEventListener("mouseup", ()=> isDown = false);
-
-document.addEventListener("mousemove", (e)=>{
-if(!isDown) return;
-panel.style.left = (e.clientX - offsetX) + "px";
-panel.style.top = (e.clientY - offsetY) + "px";
-});
-
-function toggleUI(){
-panel.style.display = panel.style.display === "none" ? "block" : "none";
-}
-
-// ===== THREE CINEMATIC WORLD =====
-
-function startGame(){
-
-const container = document.getElementById("gameContainer");
-
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0xf2f2f2);
+scene.background = new THREE.Color(0xeaeaea);
 
 const camera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, 0.1, 1000);
-camera.position.set(15,12,15);
-camera.lookAt(0,0,0);
+camera.position.set(5,4,8);
+camera.lookAt(0,1,0);
 
 const renderer = new THREE.WebGLRenderer({antialias:true});
-renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setSize(window.innerWidth,window.innerHeight);
 renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-container.appendChild(renderer.domElement);
+document.getElementById("gameContainer").appendChild(renderer.domElement);
 
-// lighting
-const hemi = new THREE.HemisphereLight(0xffffff,0x444444,0.8);
-hemi.position.set(0,20,0);
+// light
+const hemi = new THREE.HemisphereLight(0xffffff,0x444444,1);
 scene.add(hemi);
 
 const dir = new THREE.DirectionalLight(0xffffff,1.2);
-dir.position.set(10,20,10);
+dir.position.set(5,10,7);
 dir.castShadow = true;
-dir.shadow.mapSize.width = 2048;
-dir.shadow.mapSize.height = 2048;
 scene.add(dir);
 
 // ground
-const groundGeo = new THREE.PlaneGeometry(100,100);
+const groundGeo = new THREE.PlaneGeometry(50,50);
 const groundMat = new THREE.MeshStandardMaterial({color:0xdddddd});
-const ground = new THREE.Mesh(groundGeo, groundMat);
+const ground = new THREE.Mesh(groundGeo,groundMat);
 ground.rotation.x = -Math.PI/2;
 ground.receiveShadow = true;
 scene.add(ground);
 
-// auto stick
-function stick(o){
-const box = new THREE.Box3().setFromObject(o);
-o.position.y -= box.min.y;
+// ===== LOAD REAL MODEL =====
+
+const loader = new THREE.GLTFLoader();
+
+loader.load(
+'https://threejs.org/examples/models/gltf/DamagedHelmet/glTF/DamagedHelmet.gltf',
+function(gltf){
+
+const model = gltf.scene;
+model.scale.set(2,2,2);
+model.position.set(0,0,0);
+
+model.traverse(function(child){
+if(child.isMesh){
+child.castShadow = true;
+child.receiveShadow = true;
 }
+});
 
-// buildings
-function building(x,z){
-const geo = new THREE.BoxGeometry(2,4,2);
-const mat = new THREE.MeshStandardMaterial({color:0x888888});
-const mesh = new THREE.Mesh(geo,mat);
-mesh.position.set(x,0,z);
-mesh.castShadow = true;
-scene.add(mesh);
-stick(mesh);
+scene.add(model);
+
+},
+undefined,
+function(error){
+console.error(error);
 }
+);
 
-building(-5,0);
-building(0,0);
-building(5,0);
-
-// animals
-function animal(x,z){
-const geo = new THREE.SphereGeometry(0.8,32,32);
-const mat = new THREE.MeshStandardMaterial({color:0xff6600});
-const mesh = new THREE.Mesh(geo,mat);
-mesh.position.set(x,0,z);
-mesh.castShadow = true;
-scene.add(mesh);
-stick(mesh);
-}
-
-animal(2,4);
-animal(6,4);
-
+// render loop
 function animate(){
 requestAnimationFrame(animate);
 renderer.render(scene,camera);
@@ -205,8 +86,6 @@ camera.aspect = window.innerWidth/window.innerHeight;
 camera.updateProjectionMatrix();
 renderer.setSize(window.innerWidth,window.innerHeight);
 });
-
-}
 
 </script>
 
