@@ -1,222 +1,213 @@
-// ============================
-// AENO STABLE BUILD
-// ============================
+// ===== AENO GAME BASIC WORLD =====
 
-const SAVE_PREFIX = "AENO_SAVE_";
-const USER_PREFIX = "AENO_USER_";
-const SESSION_KEY = "AENO_SESSION";
+// 基本場景
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x87ceeb);
 
-let state = null;
-let sessionUser = null;
+// 相機
+const camera = new THREE.PerspectiveCamera(
+  75,
+  window.innerWidth / window.innerHeight,
+  0.1,
+  1000
+);
+camera.position.set(0, 20, 30);
+camera.lookAt(0, 0, 0);
 
-let scene, camera, renderer;
+// 渲染器
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.body.appendChild(renderer.domElement);
 
-function $(id){ return document.getElementById(id); }
+// 光源
+const light = new THREE.DirectionalLight(0xffffff, 1);
+light.position.set(10, 20, 10);
+scene.add(light);
 
-// ----------------------------
-// 初始資源
-// ----------------------------
-function createNewState(){
-  return {
-    gold: 2000,
-    wood: 800,
-    stone: 800,
-    iron: 800,
-    food: 800,
-    aeno: 0
-  };
+const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+scene.add(ambient);
+
+// 地面
+const groundGeometry = new THREE.PlaneGeometry(200, 200);
+const groundMaterial = new THREE.MeshStandardMaterial({ color: 0x3cb371 });
+const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+ground.rotation.x = -Math.PI / 2;
+scene.add(ground);
+
+// ===== 建築 =====
+
+function createHouse(x, z) {
+  const group = new THREE.Group();
+
+  const body = new THREE.Mesh(
+    new THREE.BoxGeometry(2, 2, 2),
+    new THREE.MeshStandardMaterial({ color: 0xffcc99 })
+  );
+  body.position.y = 1;
+  group.add(body);
+
+  const roof = new THREE.Mesh(
+    new THREE.ConeGeometry(1.7, 1.5, 4),
+    new THREE.MeshStandardMaterial({ color: 0xaa0000 })
+  );
+  roof.position.y = 2.5;
+  roof.rotation.y = Math.PI / 4;
+  group.add(roof);
+
+  group.position.set(x, 0, z);
+  scene.add(group);
 }
 
-// ----------------------------
-// THREE 初始化
-// ----------------------------
-function initThree(){
+function createFarm(x, z) {
+  const farm = new THREE.Mesh(
+    new THREE.BoxGeometry(3, 0.3, 3),
+    new THREE.MeshStandardMaterial({ color: 0x996633 })
+  );
+  farm.position.set(x, 0.15, z);
+  scene.add(farm);
+}
 
-  const canvas = $("gameCanvas");
+function createLumberMill(x, z) {
+  const mill = new THREE.Mesh(
+    new THREE.BoxGeometry(2.5, 2, 2.5),
+    new THREE.MeshStandardMaterial({ color: 0x8b4513 })
+  );
+  mill.position.set(x, 1, z);
+  scene.add(mill);
+}
 
-  renderer = new THREE.WebGLRenderer({ canvas });
-  renderer.setSize(window.innerWidth, window.innerHeight);
+function createTree(x, z) {
+  const trunk = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.2, 0.2, 1.5),
+    new THREE.MeshStandardMaterial({ color: 0x8b5a2b })
+  );
+  trunk.position.set(x, 0.75, z);
 
-  scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x87ceeb);
+  const leaves = new THREE.Mesh(
+    new THREE.SphereGeometry(0.8),
+    new THREE.MeshStandardMaterial({ color: 0x228b22 })
+  );
+  leaves.position.set(x, 1.8, z);
 
-  camera = new THREE.PerspectiveCamera(
-    60,
-    window.innerWidth/window.innerHeight,
-    0.1,
-    1000
+  scene.add(trunk);
+  scene.add(leaves);
+}
+
+// ===== 動物 =====
+
+const animals = [];
+
+function createAnimal(x, z) {
+  const animal = new THREE.Mesh(
+    new THREE.BoxGeometry(1, 1, 1),
+    new THREE.MeshStandardMaterial({ color: 0xffffff })
   );
 
-  camera.position.set(0,20,30);
-  camera.lookAt(0,0,0);
+  animal.position.set(x, 0.5, z);
 
-  const light = new THREE.DirectionalLight(0xffffff,1);
-  light.position.set(20,50,20);
-  scene.add(light);
+  animal.userData = {
+    dirX: (Math.random() - 0.5) * 0.05,
+    dirZ: (Math.random() - 0.5) * 0.05
+  };
 
-  const ambient = new THREE.AmbientLight(0xffffff,0.6);
-  scene.add(ambient);
-
-  const geo = new THREE.PlaneGeometry(200,200);
-  const mat = new THREE.MeshStandardMaterial({color:0x228b22});
-  const ground = new THREE.Mesh(geo,mat);
-  ground.rotation.x = -Math.PI/2;
-  scene.add(ground);
-
-  animate();
+  animals.push(animal);
+  scene.add(animal);
 }
 
-function animate(){
+function updateAnimals() {
+  animals.forEach(a => {
+    a.position.x += a.userData.dirX;
+    a.position.z += a.userData.dirZ;
+
+    if (a.position.x > 80 || a.position.x < -80) {
+      a.userData.dirX *= -1;
+    }
+    if (a.position.z > 80 || a.position.z < -80) {
+      a.userData.dirZ *= -1;
+    }
+  });
+}
+
+// ===== 生成世界 =====
+
+function generateWorld() {
+
+  for (let i = 0; i < 5; i++) {
+    createHouse(Math.random() * 60 - 30, Math.random() * 60 - 30);
+  }
+
+  for (let i = 0; i < 2; i++) {
+    createFarm(Math.random() * 60 - 30, Math.random() * 60 - 30);
+  }
+
+  for (let i = 0; i < 2; i++) {
+    createLumberMill(Math.random() * 60 - 30, Math.random() * 60 - 30);
+  }
+
+  for (let i = 0; i < 20; i++) {
+    createTree(Math.random() * 150 - 75, Math.random() * 150 - 75);
+  }
+
+  for (let i = 0; i < 6; i++) {
+    createAnimal(Math.random() * 100 - 50, Math.random() * 100 - 50);
+  }
+}
+
+generateWorld();
+
+// ===== 簡單鏡頭控制（手機可拖） =====
+
+let isDragging = false;
+let prevX = 0;
+
+document.addEventListener("mousedown", e => {
+  isDragging = true;
+  prevX = e.clientX;
+});
+
+document.addEventListener("mousemove", e => {
+  if (!isDragging) return;
+  const delta = e.clientX - prevX;
+  camera.position.x -= delta * 0.05;
+  prevX = e.clientX;
+});
+
+document.addEventListener("mouseup", () => {
+  isDragging = false;
+});
+
+document.addEventListener("touchstart", e => {
+  isDragging = true;
+  prevX = e.touches[0].clientX;
+});
+
+document.addEventListener("touchmove", e => {
+  if (!isDragging) return;
+  const delta = e.touches[0].clientX - prevX;
+  camera.position.x -= delta * 0.05;
+  prevX = e.touches[0].clientX;
+});
+
+document.addEventListener("touchend", () => {
+  isDragging = false;
+});
+
+// ===== 動畫循環 =====
+
+function animate() {
   requestAnimationFrame(animate);
-  renderer.render(scene,camera);
+
+  updateAnimals();
+
+  renderer.render(scene, camera);
 }
 
-// ----------------------------
-// UI
-// ----------------------------
-function refreshUI(){
-  $("uiGold").textContent = state.gold;
-  $("uiWood").textContent = state.wood;
-  $("uiStone").textContent = state.stone;
-  $("uiIron").textContent = state.iron;
-  $("uiFood").textContent = state.food;
-  $("uiAeno").textContent = state.aeno;
-}
+animate();
 
-// ----------------------------
-// 手機 + 電腦拖動
-// ----------------------------
-function makeDraggable(el){
+// ===== 響應式 =====
 
-  let isDown=false, offsetX=0, offsetY=0;
-
-  function start(x,y){
-    isDown=true;
-    offsetX = x - el.offsetLeft;
-    offsetY = y - el.offsetTop;
-  }
-
-  function move(x,y){
-    if(!isDown) return;
-    el.style.left = (x-offsetX)+"px";
-    el.style.top = (y-offsetY)+"px";
-  }
-
-  function end(){ isDown=false; }
-
-  // mouse
-  el.addEventListener("mousedown",e=>{
-    start(e.clientX,e.clientY);
-  });
-
-  document.addEventListener("mousemove",e=>{
-    move(e.clientX,e.clientY);
-  });
-
-  document.addEventListener("mouseup",end);
-
-  // touch
-  el.addEventListener("touchstart",e=>{
-    e.preventDefault();
-    const t=e.touches[0];
-    start(t.clientX,t.clientY);
-  },{passive:false});
-
-  document.addEventListener("touchmove",e=>{
-    e.preventDefault();
-    const t=e.touches[0];
-    move(t.clientX,t.clientY);
-  },{passive:false});
-
-  document.addEventListener("touchend",end);
-}
-
-// ----------------------------
-// 進入遊戲
-// ----------------------------
-function enterGame(){
-
-  $("loginScreen").classList.add("hidden");
-  $("gameScreen").classList.remove("hidden");
-
-  refreshUI();
-  initThree();
-  makeDraggable($("mainPanel"));
-}
-
-// ----------------------------
-// 註冊
-// ----------------------------
-function register(){
-
-  const user=$("username").value.trim();
-  const pass=$("password").value.trim();
-
-  if(!user||!pass){ alert("請輸入帳號密碼"); return; }
-
-  if(localStorage.getItem(USER_PREFIX+user)){
-    alert("帳號已存在"); return;
-  }
-
-  localStorage.setItem(USER_PREFIX+user,pass);
-  alert("註冊成功");
-}
-
-// ----------------------------
-// 登入
-// ----------------------------
-function login(){
-
-  const user=$("username").value.trim();
-  const pass=$("password").value.trim();
-
-  const saved=localStorage.getItem(USER_PREFIX+user);
-
-  if(saved!==pass){ alert("登入失敗"); return; }
-
-  sessionUser=user;
-  localStorage.setItem(SESSION_KEY,user);
-
-  const raw=localStorage.getItem(SAVE_PREFIX+user);
-  state=raw?JSON.parse(raw):createNewState();
-
-  enterGame();
-}
-
-// ----------------------------
-// 自動登入
-// ----------------------------
-function autoLogin(){
-
-  const savedUser=localStorage.getItem(SESSION_KEY);
-  if(!savedUser) return;
-
-  sessionUser=savedUser;
-
-  const raw=localStorage.getItem(SAVE_PREFIX+savedUser);
-  state=raw?JSON.parse(raw):createNewState();
-
-  enterGame();
-}
-
-// ----------------------------
-// 遊客
-// ----------------------------
-function guestLogin(){
-  state=createNewState();
-  enterGame();
-}
-
-// ----------------------------
-// Boot
-// ----------------------------
-function boot(){
-
-  $("btnRegister").onclick=register;
-  $("btnLogin").onclick=login;
-  $("btnGuest").onclick=guestLogin;
-
-  autoLogin();
-}
-
-boot();
+window.addEventListener("resize", () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
