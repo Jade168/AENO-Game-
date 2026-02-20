@@ -1,8 +1,9 @@
 // ============================
-// AENO CORE LOGIN VERSION
+// AENO LOGIN FIXED VERSION
 // ============================
 
 const SAVE_PREFIX = "AENO_SAVE_";
+const USER_PREFIX = "AENO_USER_";
 const SESSION_KEY = "AENO_SESSION";
 
 let state = null;
@@ -65,35 +66,62 @@ function enterGame(){
 }
 
 // ----------------------------
-// 登入邏輯
+// 註冊
 // ----------------------------
 function register(){
   const user = $("username").value.trim();
   const pass = $("password").value.trim();
-  if(!user || !pass) return alert("請輸入帳號密碼");
 
-  localStorage.setItem("USER_"+user, pass);
-  alert("註冊成功");
+  if(!user || !pass){
+    alert("請輸入帳號密碼");
+    return;
+  }
+
+  if(localStorage.getItem(USER_PREFIX + user)){
+    alert("帳號已存在");
+    return;
+  }
+
+  localStorage.setItem(USER_PREFIX + user, pass);
+  alert("註冊成功，請登入");
 }
 
+// ----------------------------
+// 登入
+// ----------------------------
 function login(){
   const user = $("username").value.trim();
   const pass = $("password").value.trim();
-  const saved = localStorage.getItem("USER_"+user);
+
+  if(!user || !pass){
+    alert("請輸入帳號密碼");
+    return;
+  }
+
+  const saved = localStorage.getItem(USER_PREFIX + user);
+
+  if(saved === null){
+    alert("帳號不存在，請先註冊");
+    return;
+  }
 
   if(saved !== pass){
-    alert("登入失敗");
+    alert("密碼錯誤");
     return;
   }
 
   sessionUser = user;
   localStorage.setItem(SESSION_KEY, user);
+
   loadGame(user);
   enterGame();
 }
 
+// ----------------------------
+// 遊客
+// ----------------------------
 function guestLogin(){
-  sessionUser = "GUEST_"+Date.now();
+  sessionUser = "GUEST";
   state = createNewState();
   enterGame();
 }
@@ -103,14 +131,15 @@ function guestLogin(){
 // ----------------------------
 function boot(){
 
-  // 永遠顯示登入畫面
+  // 清除舊 session（測試階段避免自動登入問題）
+  localStorage.removeItem(SESSION_KEY);
+
   $("loginScreen").classList.remove("hidden");
   $("gameScreen").classList.add("hidden");
 
   $("btnRegister").onclick = register;
   $("btnLogin").onclick = login;
   $("btnGuest").onclick = guestLogin;
-
 }
 
 boot();
