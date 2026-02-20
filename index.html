@@ -1,62 +1,77 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
-  <title>AENO Game</title>
+<meta charset="UTF-8">
+<title>AENO V3</title>
+<style>
+body { margin:0; overflow:hidden; font-family:sans-serif; background:#000; }
 
-  <style>
-    body {
-      margin: 0;
-      overflow: hidden;
-      font-family: Arial;
-    }
+#loginScreen {
+position:absolute;
+width:100%;
+height:100%;
+display:flex;
+justify-content:center;
+align-items:center;
+background:#111;
+color:white;
+flex-direction:column;
+}
 
-    #loginBox {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background: #222;
-      padding: 20px;
-      border-radius: 10px;
-      color: white;
-      text-align: center;
-      z-index: 10;
-    }
+#gameUI {
+position:absolute;
+top:10px;
+left:10px;
+width:260px;
+background:rgba(0,0,0,0.75);
+color:white;
+padding:12px;
+border-radius:8px;
+cursor:move;
+z-index:10;
+}
 
-    #gameContainer {
-      display: none;
-      width: 100vw;
-      height: 100vh;
-    }
-  </style>
+#toggleBtn {
+position:absolute;
+top:10px;
+right:10px;
+z-index:20;
+padding:6px 10px;
+}
+
+#gameContainer {
+width:100vw;
+height:100vh;
+}
+</style>
 </head>
+
 <body>
 
-<!-- 登入 -->
-<div id="loginBox">
-  <h2>AENO Login</h2>
-  <input id="username" placeholder="Username">
-  <br><br>
-  <button onclick="login()">Enter</button>
+<div id="loginScreen">
+<h2>AENO V3</h2>
+<input id="playerName" placeholder="Enter Name">
+<button onclick="login()">Enter</button>
 </div>
 
-<!-- 遊戲 -->
+<button id="toggleBtn" onclick="toggleUI()" style="display:none;">UI</button>
+
+<div id="gameUI" style="display:none;">
+<h3>基地面板</h3>
+<div>木材: <span id="wood">800</span></div>
+<div>石頭: <span id="stone">800</span></div>
+<div>鐵礦: <span id="iron">800</span></div>
+<div>糧食: <span id="food">800</span></div>
+<div>金幣: <span id="gold">2000</span></div>
+</div>
+
 <div id="gameContainer"></div>
 
-<!-- Three.js -->
-<script src="https://cdn.jsdelivr.net/npm/three@0.158/build/three.min.js"></script>
-
-<!-- 核心架構 -->
-<script src="auth.js"></script>
-<script src="loader.js"></script>
-
-<!-- 引擎 -->
+<script src="https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.min.js"></script>
 <script src="engine.js"></script>
-
-<!-- 遊戲控制 -->
 <script src="world.js"></script>
-  <script src="game.js"></script>
+<script src="ui.js"></script>
+<script src="game.js"></script>
 
 </body>
 </html>
