@@ -1,5 +1,5 @@
 // ============================
-// AENO V3 - LOGIN + 3D WORLD
+// AENO STABLE BUILD
 // ============================
 
 const SAVE_PREFIX = "AENO_SAVE_";
@@ -10,7 +10,6 @@ let state = null;
 let sessionUser = null;
 
 let scene, camera, renderer;
-let ground;
 
 function $(id){ return document.getElementById(id); }
 
@@ -29,7 +28,7 @@ function createNewState(){
 }
 
 // ----------------------------
-// Three.js 初始化
+// THREE 初始化
 // ----------------------------
 function initThree(){
 
@@ -43,36 +42,33 @@ function initThree(){
 
   camera = new THREE.PerspectiveCamera(
     60,
-    window.innerWidth / window.innerHeight,
+    window.innerWidth/window.innerHeight,
     0.1,
     1000
   );
 
-  camera.position.set(0, 20, 30);
+  camera.position.set(0,20,30);
   camera.lookAt(0,0,0);
 
-  // 光
-  const light = new THREE.DirectionalLight(0xffffff, 1);
-  light.position.set(20, 50, 20);
+  const light = new THREE.DirectionalLight(0xffffff,1);
+  light.position.set(20,50,20);
   scene.add(light);
 
-  const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+  const ambient = new THREE.AmbientLight(0xffffff,0.6);
   scene.add(ambient);
 
-  // 地面
   const geo = new THREE.PlaneGeometry(200,200);
-  const mat = new THREE.MeshStandardMaterial({ color: 0x228b22 });
-  ground = new THREE.Mesh(geo, mat);
-  ground.rotation.x = -Math.PI / 2;
+  const mat = new THREE.MeshStandardMaterial({color:0x228b22});
+  const ground = new THREE.Mesh(geo,mat);
+  ground.rotation.x = -Math.PI/2;
   scene.add(ground);
 
   animate();
 }
 
-// ----------------------------
 function animate(){
   requestAnimationFrame(animate);
-  renderer.render(scene, camera);
+  renderer.render(scene,camera);
 }
 
 // ----------------------------
@@ -88,38 +84,61 @@ function refreshUI(){
 }
 
 // ----------------------------
-// 面板拖動
+// 手機 + 電腦拖動
 // ----------------------------
 function makeDraggable(el){
-  let isDown = false;
-  let offsetX = 0;
-  let offsetY = 0;
 
-  el.addEventListener("mousedown", e=>{
-    isDown = true;
-    offsetX = e.clientX - el.offsetLeft;
-    offsetY = e.clientY - el.offsetTop;
-  });
+  let isDown=false, offsetX=0, offsetY=0;
 
-  document.addEventListener("mousemove", e=>{
+  function start(x,y){
+    isDown=true;
+    offsetX = x - el.offsetLeft;
+    offsetY = y - el.offsetTop;
+  }
+
+  function move(x,y){
     if(!isDown) return;
-    el.style.left = (e.clientX - offsetX) + "px";
-    el.style.top = (e.clientY - offsetY) + "px";
+    el.style.left = (x-offsetX)+"px";
+    el.style.top = (y-offsetY)+"px";
+  }
+
+  function end(){ isDown=false; }
+
+  // mouse
+  el.addEventListener("mousedown",e=>{
+    start(e.clientX,e.clientY);
   });
 
-  document.addEventListener("mouseup", ()=>{
-    isDown = false;
+  document.addEventListener("mousemove",e=>{
+    move(e.clientX,e.clientY);
   });
+
+  document.addEventListener("mouseup",end);
+
+  // touch
+  el.addEventListener("touchstart",e=>{
+    e.preventDefault();
+    const t=e.touches[0];
+    start(t.clientX,t.clientY);
+  },{passive:false});
+
+  document.addEventListener("touchmove",e=>{
+    e.preventDefault();
+    const t=e.touches[0];
+    move(t.clientX,t.clientY);
+  },{passive:false});
+
+  document.addEventListener("touchend",end);
 }
 
 // ----------------------------
 // 進入遊戲
 // ----------------------------
 function enterGame(){
+
   $("loginScreen").classList.add("hidden");
   $("gameScreen").classList.remove("hidden");
 
-  state = state || createNewState();
   refreshUI();
   initThree();
   makeDraggable($("mainPanel"));
@@ -129,20 +148,17 @@ function enterGame(){
 // 註冊
 // ----------------------------
 function register(){
-  const user = $("username").value.trim();
-  const pass = $("password").value.trim();
 
-  if(!user || !pass){
-    alert("請輸入帳號密碼");
-    return;
+  const user=$("username").value.trim();
+  const pass=$("password").value.trim();
+
+  if(!user||!pass){ alert("請輸入帳號密碼"); return; }
+
+  if(localStorage.getItem(USER_PREFIX+user)){
+    alert("帳號已存在"); return;
   }
 
-  if(localStorage.getItem(USER_PREFIX + user)){
-    alert("帳號已存在");
-    return;
-  }
-
-  localStorage.setItem(USER_PREFIX + user, pass);
+  localStorage.setItem(USER_PREFIX+user,pass);
   alert("註冊成功");
 }
 
@@ -150,20 +166,35 @@ function register(){
 // 登入
 // ----------------------------
 function login(){
-  const user = $("username").value.trim();
-  const pass = $("password").value.trim();
 
-  const saved = localStorage.getItem(USER_PREFIX + user);
+  const user=$("username").value.trim();
+  const pass=$("password").value.trim();
 
-  if(saved !== pass){
-    alert("登入失敗");
-    return;
-  }
+  const saved=localStorage.getItem(USER_PREFIX+user);
 
-  sessionUser = user;
+  if(saved!==pass){ alert("登入失敗"); return; }
 
-  const raw = localStorage.getItem(SAVE_PREFIX + user);
-  state = raw ? JSON.parse(raw) : createNewState();
+  sessionUser=user;
+  localStorage.setItem(SESSION_KEY,user);
+
+  const raw=localStorage.getItem(SAVE_PREFIX+user);
+  state=raw?JSON.parse(raw):createNewState();
+
+  enterGame();
+}
+
+// ----------------------------
+// 自動登入
+// ----------------------------
+function autoLogin(){
+
+  const savedUser=localStorage.getItem(SESSION_KEY);
+  if(!savedUser) return;
+
+  sessionUser=savedUser;
+
+  const raw=localStorage.getItem(SAVE_PREFIX+savedUser);
+  state=raw?JSON.parse(raw):createNewState();
 
   enterGame();
 }
@@ -172,7 +203,7 @@ function login(){
 // 遊客
 // ----------------------------
 function guestLogin(){
-  state = createNewState();
+  state=createNewState();
   enterGame();
 }
 
@@ -180,9 +211,12 @@ function guestLogin(){
 // Boot
 // ----------------------------
 function boot(){
-  $("btnRegister").onclick = register;
-  $("btnLogin").onclick = login;
-  $("btnGuest").onclick = guestLogin;
+
+  $("btnRegister").onclick=register;
+  $("btnLogin").onclick=login;
+  $("btnGuest").onclick=guestLogin;
+
+  autoLogin();
 }
 
 boot();
