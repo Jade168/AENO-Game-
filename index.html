@@ -3,36 +3,58 @@
 <head>
   <meta charset="UTF-8">
   <title>AENO Game</title>
+
   <style>
-    body { margin:0; overflow:hidden; font-family:Arial; }
-    #loginBox {
-      position:absolute;
-      top:50%; left:50%;
-      transform:translate(-50%,-50%);
-      background:#222;
-      padding:20px;
-      border-radius:10px;
-      color:white;
+    body {
+      margin: 0;
+      overflow: hidden;
+      font-family: Arial;
     }
+
+    #loginBox {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #222;
+      padding: 20px;
+      border-radius: 10px;
+      color: white;
+      text-align: center;
+      z-index: 10;
+    }
+
     #gameContainer {
-      display:none;
+      display: none;
+      width: 100vw;
+      height: 100vh;
     }
   </style>
 </head>
 <body>
 
+<!-- 登入 -->
 <div id="loginBox">
   <h2>AENO Login</h2>
-  <input id="username" placeholder="Username"><br><br>
+  <input id="username" placeholder="Username">
+  <br><br>
   <button onclick="login()">Enter</button>
 </div>
 
+<!-- 遊戲 -->
 <div id="gameContainer"></div>
 
+<!-- Three.js -->
 <script src="https://cdn.jsdelivr.net/npm/three@0.158/build/three.min.js"></script>
 
+<!-- 核心架構 -->
 <script src="auth.js"></script>
 <script src="loader.js"></script>
+
+<!-- 引擎 -->
+<script src="engine.js"></script>
+
+<!-- 遊戲控制 -->
 <script src="game.js"></script>
 
 </body>
