@@ -1,5 +1,5 @@
 // ============================
-// AENO LOGIN FIXED VERSION
+// AENO V3 - LOGIN + 3D WORLD
 // ============================
 
 const SAVE_PREFIX = "AENO_SAVE_";
@@ -8,6 +8,9 @@ const SESSION_KEY = "AENO_SESSION";
 
 let state = null;
 let sessionUser = null;
+
+let scene, camera, renderer;
+let ground;
 
 function $(id){ return document.getElementById(id); }
 
@@ -26,21 +29,50 @@ function createNewState(){
 }
 
 // ----------------------------
-// 儲存 / 讀取
+// Three.js 初始化
 // ----------------------------
-function saveGame(){
-  if(!sessionUser) return;
-  localStorage.setItem(SAVE_PREFIX + sessionUser, JSON.stringify(state));
+function initThree(){
+
+  const canvas = $("gameCanvas");
+
+  renderer = new THREE.WebGLRenderer({ canvas });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x87ceeb);
+
+  camera = new THREE.PerspectiveCamera(
+    60,
+    window.innerWidth / window.innerHeight,
+    0.1,
+    1000
+  );
+
+  camera.position.set(0, 20, 30);
+  camera.lookAt(0,0,0);
+
+  // 光
+  const light = new THREE.DirectionalLight(0xffffff, 1);
+  light.position.set(20, 50, 20);
+  scene.add(light);
+
+  const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+  scene.add(ambient);
+
+  // 地面
+  const geo = new THREE.PlaneGeometry(200,200);
+  const mat = new THREE.MeshStandardMaterial({ color: 0x228b22 });
+  ground = new THREE.Mesh(geo, mat);
+  ground.rotation.x = -Math.PI / 2;
+  scene.add(ground);
+
+  animate();
 }
 
-function loadGame(user){
-  const raw = localStorage.getItem(SAVE_PREFIX + user);
-  if(raw){
-    state = JSON.parse(raw);
-  }else{
-    state = createNewState();
-    saveGame();
-  }
+// ----------------------------
+function animate(){
+  requestAnimationFrame(animate);
+  renderer.render(scene, camera);
 }
 
 // ----------------------------
@@ -56,13 +88,41 @@ function refreshUI(){
 }
 
 // ----------------------------
+// 面板拖動
+// ----------------------------
+function makeDraggable(el){
+  let isDown = false;
+  let offsetX = 0;
+  let offsetY = 0;
+
+  el.addEventListener("mousedown", e=>{
+    isDown = true;
+    offsetX = e.clientX - el.offsetLeft;
+    offsetY = e.clientY - el.offsetTop;
+  });
+
+  document.addEventListener("mousemove", e=>{
+    if(!isDown) return;
+    el.style.left = (e.clientX - offsetX) + "px";
+    el.style.top = (e.clientY - offsetY) + "px";
+  });
+
+  document.addEventListener("mouseup", ()=>{
+    isDown = false;
+  });
+}
+
+// ----------------------------
 // 進入遊戲
 // ----------------------------
 function enterGame(){
   $("loginScreen").classList.add("hidden");
   $("gameScreen").classList.remove("hidden");
 
+  state = state || createNewState();
   refreshUI();
+  initThree();
+  makeDraggable($("mainPanel"));
 }
 
 // ----------------------------
@@ -83,7 +143,7 @@ function register(){
   }
 
   localStorage.setItem(USER_PREFIX + user, pass);
-  alert("註冊成功，請登入");
+  alert("註冊成功");
 }
 
 // ----------------------------
@@ -93,27 +153,18 @@ function login(){
   const user = $("username").value.trim();
   const pass = $("password").value.trim();
 
-  if(!user || !pass){
-    alert("請輸入帳號密碼");
-    return;
-  }
-
   const saved = localStorage.getItem(USER_PREFIX + user);
 
-  if(saved === null){
-    alert("帳號不存在，請先註冊");
-    return;
-  }
-
   if(saved !== pass){
-    alert("密碼錯誤");
+    alert("登入失敗");
     return;
   }
 
   sessionUser = user;
-  localStorage.setItem(SESSION_KEY, user);
 
-  loadGame(user);
+  const raw = localStorage.getItem(SAVE_PREFIX + user);
+  state = raw ? JSON.parse(raw) : createNewState();
+
   enterGame();
 }
 
@@ -121,7 +172,6 @@ function login(){
 // 遊客
 // ----------------------------
 function guestLogin(){
-  sessionUser = "GUEST";
   state = createNewState();
   enterGame();
 }
@@ -130,13 +180,6 @@ function guestLogin(){
 // Boot
 // ----------------------------
 function boot(){
-
-  // 清除舊 session（測試階段避免自動登入問題）
-  localStorage.removeItem(SESSION_KEY);
-
-  $("loginScreen").classList.remove("hidden");
-  $("gameScreen").classList.add("hidden");
-
   $("btnRegister").onclick = register;
   $("btnLogin").onclick = login;
   $("btnGuest").onclick = guestLogin;
