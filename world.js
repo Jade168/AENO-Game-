@@ -1,41 +1,37 @@
-// ===== WORLD.JS =====
-// 只負責建立世界物件（建築 + 動物）
+let animals=[];
 
-function loadWorld() {
+function loadWorld(){
 
-  if (!scene) {
-    console.error("Engine not ready");
-    return;
-  }
+const groundGeo = new THREE.PlaneGeometry(100,100);
+const groundMat = new THREE.MeshStandardMaterial({color:0x228B22});
+const ground = new THREE.Mesh(groundGeo,groundMat);
+ground.rotation.x = -Math.PI/2;
+scene.add(ground);
 
-  createBuildings();
-  createAnimals();
+for(let i=0;i<3;i++){
+const box = new THREE.Mesh(
+new THREE.BoxGeometry(3,3,3),
+new THREE.MeshStandardMaterial({color:0x999999})
+);
+box.position.set(i*6-6,1.5,0);
+scene.add(box);
 }
 
-
-// ===== 建築 =====
-function createBuildings() {
-
-  const buildingGeometry = new THREE.BoxGeometry(5, 10, 5);
-  const buildingMaterial = new THREE.MeshStandardMaterial({ color: 0x888888 });
-
-  for (let i = 0; i < 3; i++) {
-    const building = new THREE.Mesh(buildingGeometry, buildingMaterial);
-    building.position.set(i * 10 - 10, 5, -10);
-    scene.add(building);
-  }
+for(let i=0;i<2;i++){
+const animal = new THREE.Mesh(
+new THREE.SphereGeometry(1,16,16),
+new THREE.MeshStandardMaterial({color:0xff9900})
+);
+animal.position.set(i*5-2,1,5);
+scene.add(animal);
+animals.push(animal);
 }
 
+}
 
-// ===== 動物 =====
-function createAnimals() {
-
-  const animalGeometry = new THREE.SphereGeometry(2, 16, 16);
-  const animalMaterial = new THREE.MeshStandardMaterial({ color: 0xffaa00 });
-
-  for (let i = 0; i < 2; i++) {
-    const animal = new THREE.Mesh(animalGeometry, animalMaterial);
-    animal.position.set(i * 8 - 4, 2, 5);
-    scene.add(animal);
-  }
+function updateWorld(){
+animals.forEach(a=>{
+a.position.x += 0.02;
+if(a.position.x>10) a.position.x=-10;
+});
 }
