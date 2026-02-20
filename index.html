@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>AENO V3</title>
+
 <style>
 body { margin:0; overflow:hidden; font-family:sans-serif; background:#000; }
 
@@ -16,6 +17,7 @@ align-items:center;
 background:#111;
 color:white;
 flex-direction:column;
+z-index:50;
 }
 
 #gameUI {
@@ -68,10 +70,145 @@ height:100vh;
 <div id="gameContainer"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.min.js"></script>
-<script src="engine.js"></script>
-<script src="world.js"></script>
-<script src="ui.js"></script>
-<script src="game.js"></script>
+
+<script>
+
+// ===== LOGIN =====
+
+function login(){
+const name = document.getElementById("playerName").value;
+if(!name) return;
+
+localStorage.setItem("aenoPlayer", name);
+
+document.getElementById("loginScreen").style.display = "none";
+document.getElementById("gameUI").style.display = "block";
+document.getElementById("toggleBtn").style.display = "block";
+
+startGame();
+}
+
+window.onload = function(){
+if(localStorage.getItem("aenoPlayer")){
+document.getElementById("loginScreen").style.display = "none";
+document.getElementById("gameUI").style.display = "block";
+document.getElementById("toggleBtn").style.display = "block";
+startGame();
+}
+}
+
+// ===== UI DRAG =====
+
+const panel = document.getElementById("gameUI");
+let offsetX, offsetY, isDown = false;
+
+panel.addEventListener("mousedown", (e)=>{
+isDown = true;
+offsetX = e.clientX - panel.offsetLeft;
+offsetY = e.clientY - panel.offsetTop;
+});
+
+document.addEventListener("mouseup", ()=> isDown = false);
+
+document.addEventListener("mousemove", (e)=>{
+if(!isDown) return;
+panel.style.left = (e.clientX - offsetX) + "px";
+panel.style.top = (e.clientY - offsetY) + "px";
+});
+
+function toggleUI(){
+panel.style.display = panel.style.display === "none" ? "block" : "none";
+}
+
+// ===== THREE CINEMATIC WORLD =====
+
+function startGame(){
+
+const container = document.getElementById("gameContainer");
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xf2f2f2);
+
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, 0.1, 1000);
+camera.position.set(15,12,15);
+camera.lookAt(0,0,0);
+
+const renderer = new THREE.WebGLRenderer({antialias:true});
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+container.appendChild(renderer.domElement);
+
+// lighting
+const hemi = new THREE.HemisphereLight(0xffffff,0x444444,0.8);
+hemi.position.set(0,20,0);
+scene.add(hemi);
+
+const dir = new THREE.DirectionalLight(0xffffff,1.2);
+dir.position.set(10,20,10);
+dir.castShadow = true;
+dir.shadow.mapSize.width = 2048;
+dir.shadow.mapSize.height = 2048;
+scene.add(dir);
+
+// ground
+const groundGeo = new THREE.PlaneGeometry(100,100);
+const groundMat = new THREE.MeshStandardMaterial({color:0xdddddd});
+const ground = new THREE.Mesh(groundGeo, groundMat);
+ground.rotation.x = -Math.PI/2;
+ground.receiveShadow = true;
+scene.add(ground);
+
+// auto stick
+function stick(o){
+const box = new THREE.Box3().setFromObject(o);
+o.position.y -= box.min.y;
+}
+
+// buildings
+function building(x,z){
+const geo = new THREE.BoxGeometry(2,4,2);
+const mat = new THREE.MeshStandardMaterial({color:0x888888});
+const mesh = new THREE.Mesh(geo,mat);
+mesh.position.set(x,0,z);
+mesh.castShadow = true;
+scene.add(mesh);
+stick(mesh);
+}
+
+building(-5,0);
+building(0,0);
+building(5,0);
+
+// animals
+function animal(x,z){
+const geo = new THREE.SphereGeometry(0.8,32,32);
+const mat = new THREE.MeshStandardMaterial({color:0xff6600});
+const mesh = new THREE.Mesh(geo,mat);
+mesh.position.set(x,0,z);
+mesh.castShadow = true;
+scene.add(mesh);
+stick(mesh);
+}
+
+animal(2,4);
+animal(6,4);
+
+function animate(){
+requestAnimationFrame(animate);
+renderer.render(scene,camera);
+}
+animate();
+
+window.addEventListener("resize",()=>{
+camera.aspect = window.innerWidth/window.innerHeight;
+camera.updateProjectionMatrix();
+renderer.setSize(window.innerWidth,window.innerHeight);
+});
+
+}
+
+</script>
 
 </body>
 </html>
